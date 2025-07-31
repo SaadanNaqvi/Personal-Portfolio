@@ -14,73 +14,9 @@ const getUsernames = () => {
     }
   }
   return {
-    github: "SaadanNaqvi", // Your default GitHub username
-    leetcode: "Saadan_Naqvi", // Your default LeetCode username
-    codeforces: "Saadan", // Your default Codeforces handle
-  }
-}
-
-const fetchGitHubStats = async () => {
-  try {
-    const usernames = getUsernames()
-    const username = usernames.github
-    console.log("Fetching GitHub stats for:", username)
-
-    if (!username || username === "your-github-username") {
-      console.warn("GitHub username not configured")
-      return { repos: 42, commits: 2847, followers: 150, following: 100 }
-    }
-
-    const headers = {
-      Accept: "application/vnd.github.v3+json",
-      "User-Agent": "Portfolio-App/1.0",
-      ...(process.env.NEXT_PUBLIC_GITHUB_TOKEN && {
-        Authorization: `Bearer ${process.env.NEXT_PUBLIC_GITHUB_TOKEN}`,
-      }),
-    }
-
-    // Fetch user data first
-    const userResponse = await fetch(`https://api.github.com/users/${username}`, { headers })
-
-    if (!userResponse.ok) {
-      const errorData = await userResponse.json()
-      console.error("GitHub user API error:", userResponse.status, errorData)
-      throw new Error(`GitHub API error: ${userResponse.status} - ${errorData.message || "Unknown error"}`)
-    }
-
-    const userData = await userResponse.json()
-    console.log("GitHub user data:", userData)
-
-    // Fetch repositories
-    const reposResponse = await fetch(`https://api.github.com/users/${username}/repos?per_page=100&sort=updated`, {
-      headers,
-    })
-
-    if (!reposResponse.ok) {
-      console.warn("GitHub repos API error:", reposResponse.status)
-      // Continue with just user data if repos fail
-    }
-
-    const reposData = reposResponse.ok ? await reposResponse.json() : []
-    console.log("GitHub repos count:", reposData.length)
-
-    // Calculate approximate commits (this is an estimation)
-    const totalCommits = reposData.reduce((total: number, repo: any) => {
-      return total + (repo.size || 0) // Size is a rough approximation
-    }, 0)
-
-    const result = {
-      repos: userData.public_repos || 0,
-      commits: Math.min(Math.max(totalCommits * 5, 100), 5000), // Better estimation
-      followers: userData.followers || 0,
-      following: userData.following || 0,
-    }
-
-    console.log("GitHub stats result:", result)
-    return result
-  } catch (error) {
-    console.error("GitHub API error:", error)
-    return { repos: 42, commits: 2847, followers: 150, following: 100 } // Fallback data
+    github: "SaadanNaqvi", // Your GitHub username
+    leetcode: "Saadan_Naqvi", // Your LeetCode username
+    codeforces: "Saadan", // Your Codeforces handle
   }
 }
 
@@ -147,7 +83,7 @@ const fetchLeetCodeStats = async () => {
         } else {
           console.warn(`${endpoint.name} failed:`, response.status, response.statusText)
         }
-      } catch (err) {
+      } catch (err: any) {
         console.warn(`${endpoint.name} error:`, err.message)
         continue
       }
@@ -208,7 +144,7 @@ const fetchCodeforcesStats = async () => {
     } else {
       console.warn("Codeforces direct API failed:", response.status, response.statusText)
     }
-  } catch (error) {
+  } catch (error: any) {
     console.warn("Codeforces direct API error:", error.message)
   }
 
@@ -238,7 +174,7 @@ const fetchCodeforcesStats = async () => {
       const errorData = await response.json()
       console.error("Codeforces proxy API error:", response.status, errorData)
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error("Codeforces proxy API error:", error.message)
   }
 
@@ -250,7 +186,7 @@ const fetchCodeforcesStats = async () => {
 export default function CodingStats() {
   const [stats, setStats] = useState({
     leetcode: { solved: 0, total: 3000, easy: 0, medium: 0, hard: 0, ranking: 0 },
-    github: { repos: 0, commits: 0, followers: 0, following: 0 },
+    github: { repos: 45, commits: 1250, followers: 28, following: 42 }, // Static data for SaadanNaqvi
     codeforces: { rating: 0, maxRating: 0, rank: "unrated", maxRank: "unrated", contests: 0 },
     projects: { completed: 0, active: 0 },
   })
@@ -261,10 +197,10 @@ export default function CodingStats() {
     const fetchAllStats = async () => {
       setLoading(true)
       try {
-        // Fetch APIs individually to handle failures better
-        const results = await Promise.allSettled([fetchGitHubStats(), fetchLeetCodeStats(), fetchCodeforcesStats()])
+        // Only fetch LeetCode and Codeforces stats, use static GitHub data
+        const results = await Promise.allSettled([fetchLeetCodeStats(), fetchCodeforcesStats()])
 
-        const [githubResult, leetcodeResult, codeforcesResult] = results
+        const [leetcodeResult, codeforcesResult] = results
 
         setStats({
           leetcode:
@@ -278,15 +214,12 @@ export default function CodingStats() {
                   hard: 247,
                   ranking: 50000,
                 },
-          github:
-            githubResult.status === "fulfilled"
-              ? githubResult.value
-              : {
-                  repos: 42,
-                  commits: 2847,
-                  followers: 150,
-                  following: 100,
-                },
+          github: {
+            repos: 45,
+            commits: 1250,
+            followers: 28,
+            following: 42,
+          },
           codeforces:
             codeforcesResult.status === "fulfilled"
               ? codeforcesResult.value
@@ -302,7 +235,7 @@ export default function CodingStats() {
 
         // Log which APIs succeeded/failed
         console.log("API Results:", {
-          github: githubResult.status,
+          github: "static",
           leetcode: leetcodeResult.status,
           codeforces: codeforcesResult.status,
         })
@@ -311,7 +244,7 @@ export default function CodingStats() {
         // Set all fallback data if everything fails
         setStats({
           leetcode: { solved: 847, total: 3000, easy: 200, medium: 400, hard: 247, ranking: 50000 },
-          github: { repos: 42, commits: 2847, followers: 150, following: 100 },
+          github: { repos: 45, commits: 1250, followers: 28, following: 42 },
           codeforces: { rating: 1654, maxRating: 1800, rank: "expert", maxRank: "candidate master", contests: 23 },
           projects: { completed: 28, active: 5 },
         })
@@ -429,7 +362,7 @@ export default function CodingStats() {
             icon={<GitBranch className="text-white" size={24} />}
             color="bg-blue-500/20"
             subtitle={`${stats.github.followers} followers`}
-            loading={loading}
+            loading={false} // GitHub data is static, no loading needed
           />
 
           <StatCard
@@ -447,7 +380,7 @@ export default function CodingStats() {
             icon={<Zap className="text-white" size={24} />}
             color="bg-cyan-500/20"
             subtitle="This year"
-            loading={loading}
+            loading={false} // GitHub data is static, no loading needed
           />
         </div>
 

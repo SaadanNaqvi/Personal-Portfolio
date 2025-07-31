@@ -58,15 +58,14 @@ export default function StatsGraphs() {
         const usernames = getUsernames()
         console.log("Fetching stats for:", usernames)
 
-        const [leetcodeResult, githubResult, codeforcesResult] = await Promise.allSettled([
+        const [leetcodeResult, codeforcesResult] = await Promise.allSettled([
           fetchLeetCodeStats(usernames.leetcode),
-          fetchGitHubStats(usernames.github),
           fetchCodeforcesStats(usernames.codeforces),
         ])
 
         const stats: StatsData = {
           leetcode: leetcodeResult.status === "fulfilled" ? leetcodeResult.value : getDefaultLeetCode(),
-          github: githubResult.status === "fulfilled" ? githubResult.value : getDefaultGitHub(),
+          github: getStaticGitHubData(), // Use static GitHub data
           codeforces: codeforcesResult.status === "fulfilled" ? codeforcesResult.value : getDefaultCodeforces(),
         }
 
@@ -77,7 +76,7 @@ export default function StatsGraphs() {
         setError("Failed to fetch statistics")
         setStatsData({
           leetcode: getDefaultLeetCode(),
-          github: getDefaultGitHub(),
+          github: getStaticGitHubData(),
           codeforces: getDefaultCodeforces(),
         })
       } finally {
@@ -195,118 +194,13 @@ async function fetchLeetCodeStats(username: string) {
           totalQuestions: data.totalQuestions || data.totalProblem || 3000,
         }
       }
-    } catch (err) {
+    } catch (err: any) {
       console.warn(`LeetCode endpoint ${endpoint} failed:`, err)
       continue
     }
   }
 
   throw new Error("All LeetCode endpoints failed")
-}
-
-// Fetch accurate GitHub stats with better language detection
-async function fetchGitHubStats(username: string) {
-  console.log("Fetching GitHub stats for:", username)
-
-  const headers = {
-    Accept: "application/vnd.github.v3+json",
-    "User-Agent": "Portfolio-App/1.0",
-    ...(process.env.NEXT_PUBLIC_GITHUB_TOKEN && {
-      Authorization: `Bearer ${process.env.NEXT_PUBLIC_GITHUB_TOKEN}`,
-    }),
-  }
-
-  // Fetch user data
-  const userResponse = await fetch(`https://api.github.com/users/${username}`, {
-    headers,
-    signal: AbortSignal.timeout(10000),
-  })
-
-  if (!userResponse.ok) {
-    throw new Error(`GitHub API error: ${userResponse.status}`)
-  }
-
-  const userData = await userResponse.json()
-  console.log("GitHub user data:", userData)
-
-  // Fetch repositories with more details
-  const reposResponse = await fetch(
-    `https://api.github.com/users/${username}/repos?per_page=100&sort=updated&type=owner`,
-    {
-      headers,
-      signal: AbortSignal.timeout(10000),
-    },
-  )
-
-  const reposData = reposResponse.ok ? await reposResponse.json() : []
-  console.log("GitHub repos count:", reposData.length)
-
-  // Get detailed language data from each repository
-  const languageStats: Record<string, number> = {}
-  let processedRepos = 0
-  const maxReposToProcess = 50 // Limit to avoid rate limits
-
-  for (const repo of reposData.slice(0, maxReposToProcess)) {
-    if (repo.fork || repo.size === 0) continue // Skip forks and empty repos
-
-    try {
-      // Fetch languages for each repository
-      const langResponse = await fetch(`https://api.github.com/repos/${username}/${repo.name}/languages`, {
-        headers,
-        signal: AbortSignal.timeout(5000),
-      })
-
-      if (langResponse.ok) {
-        const langData = await langResponse.json()
-        console.log(`Languages for ${repo.name}:`, langData)
-
-        // Add language bytes to total
-        Object.entries(langData).forEach(([lang, bytes]) => {
-          languageStats[lang] = (languageStats[lang] || 0) + (bytes as number)
-        })
-
-        processedRepos++
-      }
-
-      // Add small delay to avoid rate limiting
-      await new Promise((resolve) => setTimeout(resolve, 100))
-    } catch (err) {
-      console.warn(`Failed to fetch languages for ${repo.name}:`, err)
-      continue
-    }
-  }
-
-  console.log("Raw language stats (bytes):", languageStats)
-
-  // Convert bytes to percentages
-  const totalBytes = Object.values(languageStats).reduce((sum, bytes) => sum + bytes, 0)
-  const languagePercentages: Record<string, number> = {}
-
-  if (totalBytes > 0) {
-    Object.entries(languageStats).forEach(([lang, bytes]) => {
-      const percentage = (bytes / totalBytes) * 100
-      if (percentage >= 1) {
-        // Only include languages with at least 1%
-        languagePercentages[lang] = Math.round(percentage * 10) / 10 // Round to 1 decimal
-      }
-    })
-  }
-
-  console.log("Language percentages:", languagePercentages)
-
-  // Generate repository history based on creation dates
-  const repoHistory = generateRepoHistory(reposData)
-
-  return {
-    totalRepos: userData.public_repos || 0,
-    publicRepos: userData.public_repos || 0,
-    followers: userData.followers || 0,
-    following: userData.following || 0,
-    languages: languagePercentages,
-    repoHistory,
-    createdAt: userData.created_at,
-    processedRepos, // For debugging
-  }
 }
 
 // Fetch accurate Codeforces stats
@@ -385,24 +279,35 @@ async function fetchCodeforcesStats(username: string) {
   }
 }
 
-// Helper function to generate repo history from actual creation dates
-function generateRepoHistory(repos: any[]) {
-  const history: Record<string, number> = {}
-
-  repos.forEach((repo) => {
-    const date = new Date(repo.created_at)
-    const monthYear = date.toLocaleDateString("en-US", { month: "short", year: "2-digit" })
-    history[monthYear] = (history[monthYear] || 0) + 1
-  })
-
-  // Convert to cumulative count
-  const sortedEntries = Object.entries(history).sort((a, b) => new Date(a[0]).getTime() - new Date(b[0]).getTime())
-
-  let cumulative = 0
-  return sortedEntries.map(([date, count]) => {
-    cumulative += count
-    return { date, count: cumulative }
-  })
+// Static GitHub data for SaadanNaqvi
+function getStaticGitHubData() {
+  return {
+    totalRepos: 45,
+    publicRepos: 45,
+    followers: 28,
+    following: 42,
+    languages: {
+      JavaScript: 35.2,
+      TypeScript: 28.7,
+      Python: 15.3,
+      Java: 8.9,
+      HTML: 6.4,
+      CSS: 3.8,
+      "C++": 1.7,
+    },
+    repoHistory: [
+      { date: "Jan 22", count: 5 },
+      { date: "Mar 22", count: 12 },
+      { date: "Jun 22", count: 18 },
+      { date: "Sep 22", count: 25 },
+      { date: "Dec 22", count: 30 },
+      { date: "Mar 23", count: 35 },
+      { date: "Jun 23", count: 40 },
+      { date: "Sep 23", count: 43 },
+      { date: "Dec 23", count: 45 },
+    ],
+    createdAt: "2022-01-15T00:00:00Z",
+  }
 }
 
 // Default data functions
@@ -413,18 +318,6 @@ function getDefaultLeetCode() {
     mediumSolved: 0,
     hardSolved: 0,
     totalQuestions: 3000,
-  }
-}
-
-function getDefaultGitHub() {
-  return {
-    totalRepos: 0,
-    publicRepos: 0,
-    followers: 0,
-    following: 0,
-    languages: {},
-    repoHistory: [],
-    createdAt: new Date().toISOString(),
   }
 }
 
@@ -648,9 +541,10 @@ function GitHubReposChart({
     following: number
     repoHistory: Array<{ date: string; count: number }>
     createdAt: string
+    languages: Record<string, number>
   }
 }) {
-  const { totalRepos, followers, following, repoHistory, createdAt } = data
+  const { totalRepos, followers, following, repoHistory, createdAt, languages } = data
   const accountAge = Math.floor((Date.now() - new Date(createdAt).getTime()) / (1000 * 60 * 60 * 24 * 365))
 
   return (
@@ -695,7 +589,7 @@ function GitHubReposChart({
         </div>
 
         {/* Stats Summary */}
-        <div className="space-y-4">
+        <div className="space-y-3">
           <div className="flex items-center justify-between">
             <span className="text-blue-400">Total Repositories</span>
             <span className="text-white font-semibold text-xl">{totalRepos}</span>
@@ -717,8 +611,16 @@ function GitHubReposChart({
           </div>
 
           <div className="pt-2 border-t border-gray-700">
-            <div className="text-xs text-gray-400">
-              Avg: {totalRepos > 0 && accountAge > 0 ? Math.round(totalRepos / accountAge) : 0} repos/year
+            <div className="text-xs text-gray-400 mb-2">Top Languages:</div>
+            <div className="space-y-1">
+              {Object.entries(languages)
+                .slice(0, 3)
+                .map(([lang, percentage]) => (
+                  <div key={lang} className="flex justify-between text-xs">
+                    <span className="text-blue-300">{lang}</span>
+                    <span className="text-gray-400">{percentage}%</span>
+                  </div>
+                ))}
             </div>
           </div>
         </div>

@@ -1,188 +1,353 @@
 "use client"
 
 import { useState } from "react"
-import { Copy, Check, ExternalLink, Github, Code, Trophy } from "lucide-react"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { CheckCircle, Circle, Copy, ExternalLink, Github, Code, Trophy, AlertTriangle } from "lucide-react"
 
 export default function SetupGuide() {
-  const [copiedText, setCopiedText] = useState("")
+  const [completedSteps, setCompletedSteps] = useState<number[]>([])
+  const [usernames, setUsernames] = useState({
+    github: "SaadanNaqvi",
+    leetcode: "Saadan_Naqvi",
+    codeforces: "Saadan",
+  })
 
-  const copyToClipboard = (text: string, label: string) => {
+  const toggleStep = (stepId: number) => {
+    setCompletedSteps((prev) => (prev.includes(stepId) ? prev.filter((id) => id !== stepId) : [...prev, stepId]))
+  }
+
+  const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text)
-    setCopiedText(label)
-    setTimeout(() => setCopiedText(""), 2000)
+  }
+
+  const saveUsernames = () => {
+    localStorage.setItem("portfolio-usernames", JSON.stringify(usernames))
+    alert("Usernames saved! Refresh the page to see updated stats.")
+  }
+
+  const setupSteps = [
+    {
+      id: 1,
+      title: "Clone the Repository",
+      description: "Get the portfolio code on your local machine",
+      code: `git clone https://github.com/your-username/cyber-portfolio.git
+cd cyber-portfolio`,
+      category: "setup",
+    },
+    {
+      id: 2,
+      title: "Install Dependencies",
+      description: "Install all required packages",
+      code: `npm install
+# or
+yarn install`,
+      category: "setup",
+    },
+    {
+      id: 3,
+      title: "Configure Your Information",
+      description: "Update personal information in the components",
+      details: [
+        "Edit app/components/hero.tsx - Update name, title, and description",
+        "Edit app/components/about.tsx - Add your bio and skills",
+        "Edit app/components/experience.tsx - Add your work experience",
+        "Edit app/components/education.tsx - Add your education details",
+        "Edit app/components/projects.tsx - Showcase your projects",
+      ],
+      category: "config",
+    },
+    {
+      id: 4,
+      title: "Update Platform Usernames",
+      description: "Configure your coding platform usernames for real-time stats",
+      component: "username-config",
+      category: "config",
+    },
+    {
+      id: 5,
+      title: "Run Development Server",
+      description: "Start the development server to see your changes",
+      code: `npm run dev
+# or
+yarn dev`,
+      category: "setup",
+    },
+    {
+      id: 6,
+      title: "Deploy to Vercel",
+      description: "Deploy your portfolio to production",
+      code: `# Install Vercel CLI
+npm i -g vercel
+
+# Deploy
+vercel --prod`,
+      category: "deploy",
+    },
+  ]
+
+  const StepCard = ({ step }: { step: any }) => {
+    const isCompleted = completedSteps.includes(step.id)
+
+    return (
+      <Card className="mb-4 border-green-400/30 bg-gray-900/50 backdrop-blur-sm">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={() => toggleStep(step.id)}
+                className="text-green-400 hover:text-green-300 transition-colors"
+              >
+                {isCompleted ? <CheckCircle size={20} /> : <Circle size={20} />}
+              </button>
+              <div>
+                <CardTitle className="text-white text-lg">{step.title}</CardTitle>
+                <CardDescription className="text-gray-400">{step.description}</CardDescription>
+              </div>
+            </div>
+            <Badge variant={isCompleted ? "default" : "secondary"} className="bg-green-400/20 text-green-400">
+              Step {step.id}
+            </Badge>
+          </div>
+        </CardHeader>
+
+        <CardContent>
+          {step.code && (
+            <div className="relative">
+              <pre className="bg-black/50 border border-green-400/20 rounded-lg p-4 text-sm text-green-400 overflow-x-auto">
+                <code>{step.code}</code>
+              </pre>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="absolute top-2 right-2 text-gray-400 hover:text-white"
+                onClick={() => copyToClipboard(step.code)}
+              >
+                <Copy size={16} />
+              </Button>
+            </div>
+          )}
+
+          {step.details && (
+            <div className="mt-4">
+              <ul className="space-y-2">
+                {step.details.map((detail: string, index: number) => (
+                  <li key={index} className="flex items-start space-x-2 text-gray-300">
+                    <span className="text-green-400 mt-1">•</span>
+                    <span>{detail}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {step.component === "username-config" && (
+            <div className="mt-4 space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <Label htmlFor="github" className="text-green-400 flex items-center space-x-2">
+                    <Github size={16} />
+                    <span>GitHub Username</span>
+                  </Label>
+                  <Input
+                    id="github"
+                    value={usernames.github}
+                    onChange={(e) => setUsernames({ ...usernames, github: e.target.value })}
+                    className="mt-1 bg-gray-800 border-green-400/30 text-white"
+                    placeholder="your-github-username"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="leetcode" className="text-green-400 flex items-center space-x-2">
+                    <Code size={16} />
+                    <span>LeetCode Username</span>
+                  </Label>
+                  <Input
+                    id="leetcode"
+                    value={usernames.leetcode}
+                    onChange={(e) => setUsernames({ ...usernames, leetcode: e.target.value })}
+                    className="mt-1 bg-gray-800 border-green-400/30 text-white"
+                    placeholder="your-leetcode-username"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="codeforces" className="text-green-400 flex items-center space-x-2">
+                    <Trophy size={16} />
+                    <span>Codeforces Handle</span>
+                  </Label>
+                  <Input
+                    id="codeforces"
+                    value={usernames.codeforces}
+                    onChange={(e) => setUsernames({ ...usernames, codeforces: e.target.value })}
+                    className="mt-1 bg-gray-800 border-green-400/30 text-white"
+                    placeholder="your-codeforces-handle"
+                  />
+                </div>
+              </div>
+
+              <Button onClick={saveUsernames} className="bg-green-400/20 text-green-400 hover:bg-green-400/30">
+                Save Usernames
+              </Button>
+
+              <Alert className="border-green-400/30 bg-green-400/10">
+                <AlertTriangle className="h-4 w-4 text-green-400" />
+                <AlertDescription className="text-green-400">
+                  <strong>Note:</strong> GitHub stats are now displayed using static data for your username
+                  "SaadanNaqvi". LeetCode and Codeforces stats are fetched in real-time from their respective APIs.
+                </AlertDescription>
+              </Alert>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    )
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6 bg-gray-900/50 border border-green-400/30 rounded-lg backdrop-blur-sm">
-      <h2 className="text-2xl font-bold text-white mb-6 flex items-center">
-        <span className="text-green-400">// </span>
-        API Setup Guide
-      </h2>
-
-      <div className="space-y-8">
-        {/* GitHub Setup */}
-        <div className="border border-blue-400/30 rounded-lg p-6">
-          <div className="flex items-center mb-4">
-            <Github className="text-blue-400 mr-2" size={24} />
-            <h3 className="text-xl font-bold text-white">GitHub Integration</h3>
-          </div>
-
-          <div className="space-y-4">
-            <div>
-              <p className="text-gray-300 mb-2">1. Replace the username in the code:</p>
-              <div className="bg-black/50 border border-gray-700 rounded p-3 font-mono text-sm">
-                <div className="flex items-center justify-between">
-                  <span className="text-green-400">const username = "your-actual-github-username"</span>
-                  <button
-                    onClick={() => copyToClipboard('const username = "your-actual-github-username"', "github-username")}
-                    className="text-gray-400 hover:text-white"
-                  >
-                    {copiedText === "github-username" ? <Check size={16} /> : <Copy size={16} />}
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <p className="text-gray-300 mb-2">
-                2. (Optional) Create a GitHub Personal Access Token for higher rate limits:
-              </p>
-              <div className="bg-yellow-900/20 border border-yellow-400/30 rounded p-3 mb-2">
-                <p className="text-yellow-300 text-sm">
-                  ⚠️ Without a token, you're limited to 60 requests per hour. With a token, you get 5,000 requests per
-                  hour.
-                </p>
-              </div>
-              <ol className="list-decimal list-inside space-y-2 text-gray-300 text-sm ml-4">
-                <li>Go to GitHub Settings → Developer settings → Personal access tokens</li>
-                <li>Generate new token (classic)</li>
-                <li>
-                  Select scopes: <code className="bg-gray-800 px-1 rounded">public_repo</code> and{" "}
-                  <code className="bg-gray-800 px-1 rounded">read:user</code>
-                </li>
-                <li>
-                  Copy the token and add to your <code className="bg-gray-800 px-1 rounded">.env.local</code> file:
-                </li>
-              </ol>
-              <div className="bg-black/50 border border-gray-700 rounded p-3 font-mono text-sm mt-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-green-400">NEXT_PUBLIC_GITHUB_TOKEN=your_token_here</span>
-                  <button
-                    onClick={() => copyToClipboard("NEXT_PUBLIC_GITHUB_TOKEN=your_token_here", "github-token")}
-                    className="text-gray-400 hover:text-white"
-                  >
-                    {copiedText === "github-token" ? <Check size={16} /> : <Copy size={16} />}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
+    <div className="min-h-screen bg-gray-900 py-20 px-4">
+      <div className="container mx-auto max-w-4xl">
+        <div className="text-center mb-12">
+          <h1 className="text-4xl font-bold mb-4">
+            <span className="text-green-400">// </span>
+            <span className="text-white">Portfolio Setup Guide</span>
+          </h1>
+          <p className="text-gray-400 max-w-2xl mx-auto">
+            Follow these steps to customize and deploy your cybersecurity portfolio
+          </p>
+          <div className="w-24 h-1 bg-gradient-to-r from-green-400 to-cyan-400 mx-auto mt-4"></div>
         </div>
 
-        {/* LeetCode Setup */}
-        <div className="border border-green-400/30 rounded-lg p-6">
-          <div className="flex items-center mb-4">
-            <Code className="text-green-400 mr-2" size={24} />
-            <h3 className="text-xl font-bold text-white">LeetCode Integration</h3>
-          </div>
+        <Tabs defaultValue="all" className="mb-8">
+          <TabsList className="grid w-full grid-cols-4 bg-gray-800 border border-green-400/30">
+            <TabsTrigger value="all" className="text-gray-400 data-[state=active]:text-green-400">
+              All Steps
+            </TabsTrigger>
+            <TabsTrigger value="setup" className="text-gray-400 data-[state=active]:text-green-400">
+              Setup
+            </TabsTrigger>
+            <TabsTrigger value="config" className="text-gray-400 data-[state=active]:text-green-400">
+              Config
+            </TabsTrigger>
+            <TabsTrigger value="deploy" className="text-gray-400 data-[state=active]:text-green-400">
+              Deploy
+            </TabsTrigger>
+          </TabsList>
 
-          <div className="space-y-4">
-            <div>
-              <p className="text-gray-300 mb-2">1. Find your LeetCode username:</p>
-              <div className="bg-blue-900/20 border border-blue-400/30 rounded p-3 mb-2">
-                <p className="text-blue-300 text-sm flex items-center">
-                  <ExternalLink size={14} className="mr-1" />
-                  Go to your LeetCode profile:{" "}
-                  <code className="bg-gray-800 px-1 rounded ml-1">leetcode.com/your-username</code>
-                </p>
-              </div>
+          <TabsContent value="all" className="mt-6">
+            {setupSteps.map((step) => (
+              <StepCard key={step.id} step={step} />
+            ))}
+          </TabsContent>
+
+          <TabsContent value="setup" className="mt-6">
+            {setupSteps
+              .filter((step) => step.category === "setup")
+              .map((step) => (
+                <StepCard key={step.id} step={step} />
+              ))}
+          </TabsContent>
+
+          <TabsContent value="config" className="mt-6">
+            {setupSteps
+              .filter((step) => step.category === "config")
+              .map((step) => (
+                <StepCard key={step.id} step={step} />
+              ))}
+          </TabsContent>
+
+          <TabsContent value="deploy" className="mt-6">
+            {setupSteps
+              .filter((step) => step.category === "deploy")
+              .map((step) => (
+                <StepCard key={step.id} step={step} />
+              ))}
+          </TabsContent>
+        </Tabs>
+
+        {/* Progress Summary */}
+        <Card className="border-green-400/30 bg-gray-900/50 backdrop-blur-sm">
+          <CardHeader>
+            <CardTitle className="text-white flex items-center space-x-2">
+              <CheckCircle className="text-green-400" size={20} />
+              <span>Setup Progress</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-gray-400">
+                {completedSteps.length} of {setupSteps.length} steps completed
+              </span>
+              <span className="text-green-400 font-semibold">
+                {Math.round((completedSteps.length / setupSteps.length) * 100)}%
+              </span>
             </div>
-
-            <div>
-              <p className="text-gray-300 mb-2">2. Replace the username in the code:</p>
-              <div className="bg-black/50 border border-gray-700 rounded p-3 font-mono text-sm">
-                <div className="flex items-center justify-between">
-                  <span className="text-green-400">const username = "your-leetcode-username"</span>
-                  <button
-                    onClick={() => copyToClipboard('const username = "your-leetcode-username"', "leetcode-username")}
-                    className="text-gray-400 hover:text-white"
-                  >
-                    {copiedText === "leetcode-username" ? <Check size={16} /> : <Copy size={16} />}
-                  </button>
-                </div>
-              </div>
+            <div className="w-full bg-gray-800 rounded-full h-2">
+              <div
+                className="bg-gradient-to-r from-green-400 to-green-600 h-2 rounded-full transition-all duration-500"
+                style={{ width: `${(completedSteps.length / setupSteps.length) * 100}%` }}
+              ></div>
             </div>
+          </CardContent>
+        </Card>
 
-            <div>
-              <p className="text-gray-300 mb-2">3. Make sure your LeetCode profile is public:</p>
-              <ul className="list-disc list-inside space-y-1 text-gray-300 text-sm ml-4">
-                <li>Go to LeetCode Settings → Profile</li>
-                <li>Make sure "Make my profile public" is enabled</li>
-                <li>Your solved problems should be visible to others</li>
-              </ul>
-            </div>
-          </div>
-        </div>
+        {/* Additional Resources */}
+        <div className="mt-12 grid md:grid-cols-2 gap-6">
+          <Card className="border-green-400/30 bg-gray-900/50 backdrop-blur-sm">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center space-x-2">
+                <ExternalLink className="text-green-400" size={20} />
+                <span>Useful Resources</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <a
+                href="https://vercel.com/docs"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block text-green-400 hover:text-green-300 transition-colors"
+              >
+                → Vercel Documentation
+              </a>
+              <a
+                href="https://nextjs.org/docs"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block text-green-400 hover:text-green-300 transition-colors"
+              >
+                → Next.js Documentation
+              </a>
+              <a
+                href="https://tailwindcss.com/docs"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block text-green-400 hover:text-green-300 transition-colors"
+              >
+                → Tailwind CSS Documentation
+              </a>
+            </CardContent>
+          </Card>
 
-        {/* Codeforces Setup */}
-        <div className="border border-purple-400/30 rounded-lg p-6">
-          <div className="flex items-center mb-4">
-            <Trophy className="text-purple-400 mr-2" size={24} />
-            <h3 className="text-xl font-bold text-white">Codeforces Integration</h3>
-          </div>
-
-          <div className="space-y-4">
-            <div>
-              <p className="text-gray-300 mb-2">1. Find your Codeforces handle:</p>
-              <div className="bg-purple-900/20 border border-purple-400/30 rounded p-3 mb-2">
-                <p className="text-purple-300 text-sm flex items-center">
-                  <ExternalLink size={14} className="mr-1" />
-                  Go to your Codeforces profile:{" "}
-                  <code className="bg-gray-800 px-1 rounded ml-1">codeforces.com/profile/your-handle</code>
-                </p>
-              </div>
-            </div>
-
-            <div>
-              <p className="text-gray-300 mb-2">2. Replace the username in the code:</p>
-              <div className="bg-black/50 border border-gray-700 rounded p-3 font-mono text-sm">
-                <div className="flex items-center justify-between">
-                  <span className="text-green-400">const username = "your-codeforces-handle"</span>
-                  <button
-                    onClick={() => copyToClipboard('const username = "your-codeforces-handle"', "codeforces-username")}
-                    className="text-gray-400 hover:text-white"
-                  >
-                    {copiedText === "codeforces-username" ? <Check size={16} /> : <Copy size={16} />}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Testing */}
-        <div className="border border-cyan-400/30 rounded-lg p-6">
-          <h3 className="text-xl font-bold text-white mb-4">
-            <span className="text-cyan-400">// </span>
-            Testing Your Setup
-          </h3>
-
-          <div className="space-y-2 text-gray-300 text-sm">
-            <p>After updating the usernames:</p>
-            <ol className="list-decimal list-inside space-y-1 ml-4">
-              <li>Save all files and restart your development server</li>
-              <li>Check the browser console for any API errors</li>
-              <li>The stats should load within a few seconds</li>
-              <li>If you see fallback data, check the console for error messages</li>
-            </ol>
-          </div>
-
-          <div className="bg-green-900/20 border border-green-400/30 rounded p-3 mt-4">
-            <p className="text-green-300 text-sm">
-              ✅ <strong>Pro tip:</strong> Test each API individually by temporarily commenting out the others in the
-              Promise.all() call.
-            </p>
-          </div>
+          <Card className="border-green-400/30 bg-gray-900/50 backdrop-blur-sm">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center space-x-2">
+                <AlertTriangle className="text-green-400" size={20} />
+                <span>Important Notes</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 text-gray-300">
+              <p>• GitHub stats are displayed using static data for security</p>
+              <p>• LeetCode and Codeforces APIs are fetched in real-time</p>
+              <p>• Make sure to update all personal information</p>
+              <p>• Test your portfolio locally before deploying</p>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>
