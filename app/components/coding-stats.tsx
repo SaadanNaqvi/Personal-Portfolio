@@ -28,10 +28,10 @@ const fetchLeetCodeStats = async () => {
 
     if (!username || username === "your-leetcode-username") {
       console.warn("LeetCode username not configured")
-      return { solved: 847, total: 3000, easy: 200, medium: 400, hard: 247, ranking: 50000 }
+      return { solved: 25, total: 3000, easy: 15, medium: 8, hard: 2, ranking: 150000 }
     }
 
-    // Try multiple LeetCode API endpoints
+    // Try multiple LeetCode API endpoints with better error handling
     const endpoints = [
       {
         url: `https://leetcode-stats-api.herokuapp.com/${username}`,
@@ -45,6 +45,11 @@ const fetchLeetCodeStats = async () => {
         url: `https://leetcode-api-faisalshohag.vercel.app/${username}`,
         name: "faisalshohag-api",
       },
+      {
+        url: `https://leetcode.com/graphql/`,
+        name: "leetcode-graphql",
+        isGraphQL: true,
+      },
     ]
 
     for (const endpoint of endpoints) {
@@ -52,15 +57,48 @@ const fetchLeetCodeStats = async () => {
         console.log(`Trying ${endpoint.name}:`, endpoint.url)
 
         const controller = new AbortController()
-        const timeoutId = setTimeout(() => controller.abort(), 8000)
+        const timeoutId = setTimeout(() => controller.abort(), 10000) // Increased timeout
 
-        const response = await fetch(endpoint.url, {
-          signal: controller.signal,
-          headers: {
-            Accept: "application/json",
-            "User-Agent": "Portfolio-App/1.0",
-          },
-        })
+        let response
+        if (endpoint.isGraphQL) {
+          // GraphQL query for LeetCode
+          const query = {
+            query: `
+              query getUserProfile($username: String!) {
+                matchedUser(username: $username) {
+                  submitStats: submitStatsGlobal {
+                    acSubmissionNum {
+                      difficulty
+                      count
+                      submissions
+                    }
+                  }
+                }
+              }
+            `,
+            variables: { username },
+          }
+
+          response = await fetch(endpoint.url, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Accept: "application/json",
+              "User-Agent": "Portfolio-App/1.0",
+            },
+            body: JSON.stringify(query),
+            signal: controller.signal,
+          })
+        } else {
+          response = await fetch(endpoint.url, {
+            signal: controller.signal,
+            headers: {
+              Accept: "application/json",
+              "User-Agent": "Portfolio-App/1.0",
+              "Cache-Control": "no-cache",
+            },
+          })
+        }
 
         clearTimeout(timeoutId)
 
@@ -69,17 +107,39 @@ const fetchLeetCodeStats = async () => {
           console.log(`${endpoint.name} response:`, data)
 
           // Handle different API response formats
-          const result = {
-            solved: data.totalSolved || data.solvedProblem || data.solved || 0,
-            total: data.totalQuestions || data.totalProblem || 3000,
-            easy: data.easySolved || data.easy || 0,
-            medium: data.mediumSolved || data.medium || 0,
-            hard: data.hardSolved || data.hard || 0,
-            ranking: data.ranking || data.rank || 0,
+          let result
+          if (endpoint.isGraphQL && data.data?.matchedUser?.submitStats) {
+            const stats = data.data.matchedUser.submitStats.acSubmissionNum
+            const easy = stats.find((s: any) => s.difficulty === "Easy")?.count || 0
+            const medium = stats.find((s: any) => s.difficulty === "Medium")?.count || 0
+            const hard = stats.find((s: any) => s.difficulty === "Hard")?.count || 0
+
+            result = {
+              solved: easy + medium + hard,
+              total: 3000,
+              easy,
+              medium,
+              hard,
+              ranking: 0,
+            }
+          } else {
+            result = {
+              solved: data.totalSolved || data.solvedProblem || data.solved || 0,
+              total: data.totalQuestions || data.totalProblem || 3000,
+              easy: data.easySolved || data.easy || 0,
+              medium: data.mediumSolved || data.medium || 0,
+              hard: data.hardSolved || data.hard || 0,
+              ranking: data.ranking || data.rank || 0,
+            }
           }
 
-          console.log("LeetCode stats result:", result)
-          return result
+          // Validate the result
+          if (result.solved > 0 || result.easy > 0 || result.medium > 0 || result.hard > 0) {
+            console.log("LeetCode stats result:", result)
+            return result
+          } else {
+            console.warn(`${endpoint.name} returned empty data`)
+          }
         } else {
           console.warn(`${endpoint.name} failed:`, response.status, response.statusText)
         }
@@ -89,10 +149,12 @@ const fetchLeetCodeStats = async () => {
       }
     }
 
+    console.warn("All LeetCode APIs failed, using fallback data")
     throw new Error("All LeetCode APIs failed")
   } catch (error) {
     console.error("LeetCode API error:", error)
-    return { solved: 847, total: 3000, easy: 200, medium: 400, hard: 247, ranking: 50000 } // Fallback data
+    // Return reasonable fallback data for your profile
+    return { solved: 25, total: 3000, easy: 15, medium: 8, hard: 2, ranking: 150000 }
   }
 }
 
@@ -103,7 +165,7 @@ const fetchCodeforcesStats = async () => {
 
   if (!username || username === "your-codeforces-username") {
     console.warn("Codeforces username not configured")
-    return { rating: 1654, maxRating: 1800, rank: "expert", maxRank: "candidate master", contests: 23 }
+    return { rating: 1200, maxRating: 1350, rank: "pupil", maxRank: "specialist", contests: 5 }
   }
 
   // Try direct API first
@@ -180,7 +242,7 @@ const fetchCodeforcesStats = async () => {
 
   // Return fallback data
   console.warn("All Codeforces endpoints failed, using fallback data")
-  return { rating: 1654, maxRating: 1800, rank: "expert", maxRank: "candidate master", contests: 23 }
+  return { rating: 1200, maxRating: 1350, rank: "pupil", maxRank: "specialist", contests: 5 }
 }
 
 export default function CodingStats() {
@@ -192,12 +254,16 @@ export default function CodingStats() {
   })
 
   const [loading, setLoading] = useState(true)
+  const [apiStatus, setApiStatus] = useState({
+    leetcode: "loading" as "loading" | "success" | "error",
+    codeforces: "loading" as "loading" | "success" | "error",
+  })
 
   useEffect(() => {
     const fetchAllStats = async () => {
       setLoading(true)
       try {
-        // Only fetch LeetCode and Codeforces stats, use static GitHub data
+        // Fetch APIs individually to handle failures better
         const results = await Promise.allSettled([fetchLeetCodeStats(), fetchCodeforcesStats()])
 
         const [leetcodeResult, codeforcesResult] = results
@@ -207,12 +273,12 @@ export default function CodingStats() {
             leetcodeResult.status === "fulfilled"
               ? leetcodeResult.value
               : {
-                  solved: 847,
+                  solved: 25,
                   total: 3000,
-                  easy: 200,
-                  medium: 400,
-                  hard: 247,
-                  ranking: 50000,
+                  easy: 15,
+                  medium: 8,
+                  hard: 2,
+                  ranking: 150000,
                 },
           github: {
             repos: 9,
@@ -224,13 +290,19 @@ export default function CodingStats() {
             codeforcesResult.status === "fulfilled"
               ? codeforcesResult.value
               : {
-                  rating: 1654,
-                  maxRating: 1800,
-                  rank: "expert",
-                  maxRank: "candidate master",
-                  contests: 23,
+                  rating: 1200,
+                  maxRating: 1350,
+                  rank: "pupil",
+                  maxRank: "specialist",
+                  contests: 5,
                 },
           projects: { completed: 6, active: 3 }, // Based on your visible repositories
+        })
+
+        // Update API status
+        setApiStatus({
+          leetcode: leetcodeResult.status === "fulfilled" ? "success" : "error",
+          codeforces: codeforcesResult.status === "fulfilled" ? "success" : "error",
         })
 
         // Log which APIs succeeded/failed
@@ -243,10 +315,14 @@ export default function CodingStats() {
         console.error("Error fetching stats:", error)
         // Set all fallback data if everything fails
         setStats({
-          leetcode: { solved: 847, total: 3000, easy: 200, medium: 400, hard: 247, ranking: 50000 },
+          leetcode: { solved: 25, total: 3000, easy: 15, medium: 8, hard: 2, ranking: 150000 },
           github: { repos: 9, commits: 37, followers: 1, following: 3 },
-          codeforces: { rating: 1654, maxRating: 1800, rank: "expert", maxRank: "candidate master", contests: 23 },
+          codeforces: { rating: 1200, maxRating: 1350, rank: "pupil", maxRank: "specialist", contests: 5 },
           projects: { completed: 6, active: 3 },
+        })
+        setApiStatus({
+          leetcode: "error",
+          codeforces: "error",
         })
       } finally {
         setLoading(false)
@@ -264,6 +340,7 @@ export default function CodingStats() {
     color,
     subtitle,
     loading = false,
+    apiStatus,
   }: {
     title: string
     value: number
@@ -272,6 +349,7 @@ export default function CodingStats() {
     color: string
     subtitle?: string
     loading?: boolean
+    apiStatus?: "loading" | "success" | "error"
   }) => {
     const percentage = maxValue ? (value / maxValue) * 100 : 0
 
@@ -294,7 +372,25 @@ export default function CodingStats() {
           </div>
         </div>
 
-        <h3 className="text-lg font-semibold text-white mb-2">{title}</h3>
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-lg font-semibold text-white">{title}</h3>
+          {apiStatus && (
+            <div className="flex items-center space-x-1">
+              <div
+                className={`w-2 h-2 rounded-full ${
+                  apiStatus === "success"
+                    ? "bg-green-400"
+                    : apiStatus === "error"
+                      ? "bg-red-400"
+                      : "bg-yellow-400 animate-pulse"
+                }`}
+              ></div>
+              <span className="text-xs text-gray-500">
+                {apiStatus === "success" ? "Live" : apiStatus === "error" ? "Offline" : "Loading"}
+              </span>
+            </div>
+          )}
+        </div>
 
         {maxValue && !loading && (
           <div className="space-y-2">
@@ -354,6 +450,7 @@ export default function CodingStats() {
             color="bg-green-500/20"
             subtitle={`Easy: ${stats.leetcode.easy} | Medium: ${stats.leetcode.medium} | Hard: ${stats.leetcode.hard}`}
             loading={loading}
+            apiStatus={apiStatus.leetcode}
           />
 
           <StatCard
@@ -372,6 +469,7 @@ export default function CodingStats() {
             color="bg-purple-500/20"
             subtitle={`${stats.codeforces.rank} (Max: ${stats.codeforces.maxRating})`}
             loading={loading}
+            apiStatus={apiStatus.codeforces}
           />
 
           <StatCard

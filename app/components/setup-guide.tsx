@@ -1,277 +1,214 @@
 "use client"
 
 import { useState } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { CheckCircle, Circle, ExternalLink, Settings, Code, Database } from "lucide-react"
+import { Settings, CheckCircle, AlertCircle, ExternalLink, RefreshCw } from "lucide-react"
 
 export default function SetupGuide() {
-  const [completedSteps, setCompletedSteps] = useState<string[]>([])
-  const [showTokens, setShowTokens] = useState(false)
+  const [isOpen, setIsOpen] = useState(false)
   const [usernames, setUsernames] = useState({
     github: "SaadanNaqvi",
     leetcode: "Saadan_Naqvi",
     codeforces: "Saadan",
   })
 
-  const toggleStep = (stepId: string) => {
-    setCompletedSteps((prev) => (prev.includes(stepId) ? prev.filter((id) => id !== stepId) : [...prev, stepId]))
-  }
-
   const saveUsernames = () => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("portfolio-usernames", JSON.stringify(usernames))
-      alert("Usernames saved successfully!")
+    localStorage.setItem("portfolio-usernames", JSON.stringify(usernames))
+    // Trigger a page refresh to update stats
+    window.location.reload()
+  }
+
+  const resetToDefaults = () => {
+    const defaults = {
+      github: "SaadanNaqvi",
+      leetcode: "Saadan_Naqvi",
+      codeforces: "Saadan",
     }
+    setUsernames(defaults)
+    localStorage.setItem("portfolio-usernames", JSON.stringify(defaults))
+    window.location.reload()
   }
 
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text)
+  if (!isOpen) {
+    return (
+      <button
+        onClick={() => setIsOpen(true)}
+        className="fixed top-4 right-4 bg-gray-900/90 border border-green-400/30 rounded-lg p-3 backdrop-blur-sm z-50 hover:border-green-400/50 transition-colors"
+      >
+        <Settings className="text-green-400" size={20} />
+      </button>
+    )
   }
-
-  const setupSteps = [
-    {
-      id: "usernames",
-      title: "Configure Platform Usernames",
-      description: "Set your coding platform usernames for real-time stats",
-      required: true,
-    },
-    {
-      id: "deploy",
-      title: "Deploy to Vercel",
-      description: "Deploy your portfolio to make it live",
-      required: true,
-    },
-    {
-      id: "domain",
-      title: "Custom Domain (Optional)",
-      description: "Add your own domain name",
-      required: false,
-    },
-    {
-      id: "analytics",
-      title: "Analytics Setup (Optional)",
-      description: "Track your portfolio visitors",
-      required: false,
-    },
-  ]
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-6">
-      <div className="max-w-4xl mx-auto">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold mb-4">
-            <span className="text-green-400">// </span>
-            Portfolio Setup Guide
-          </h1>
-          <p className="text-gray-400 text-lg">Get your cybersecurity portfolio up and running in minutes</p>
+    <div className="fixed top-4 right-4 bg-gray-900/95 border border-green-400/30 rounded-lg p-6 backdrop-blur-sm z-50 w-96 max-h-[80vh] overflow-y-auto">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-green-400 font-bold text-lg">Portfolio Configuration</h3>
+        <button onClick={() => setIsOpen(false)} className="text-gray-400 hover:text-white">
+          ✕
+        </button>
+      </div>
+
+      <div className="space-y-6">
+        {/* Current Status */}
+        <div className="space-y-3">
+          <h4 className="text-white font-semibold">API Status</h4>
+          <div className="space-y-2 text-sm">
+            <div className="flex items-center justify-between">
+              <span className="text-gray-300">GitHub:</span>
+              <div className="flex items-center space-x-2">
+                <CheckCircle className="text-green-400" size={16} />
+                <span className="text-green-400">Static Data</span>
+              </div>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-gray-300">LeetCode:</span>
+              <div className="flex items-center space-x-2">
+                <AlertCircle className="text-yellow-400" size={16} />
+                <span className="text-yellow-400">Multiple APIs</span>
+              </div>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-gray-300">Codeforces:</span>
+              <div className="flex items-center space-x-2">
+                <CheckCircle className="text-green-400" size={16} />
+                <span className="text-green-400">Direct API</span>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <Tabs defaultValue="quick-start" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 bg-gray-800">
-            <TabsTrigger value="quick-start" className="data-[state=active]:bg-green-400/20">
-              <Settings className="w-4 h-4 mr-2" />
-              Quick Start
-            </TabsTrigger>
-            <TabsTrigger value="configuration" className="data-[state=active]:bg-green-400/20">
-              <Code className="w-4 h-4 mr-2" />
-              Configuration
-            </TabsTrigger>
-            <TabsTrigger value="deployment" className="data-[state=active]:bg-green-400/20">
-              <Database className="w-4 h-4 mr-2" />
-              Deployment
-            </TabsTrigger>
-          </TabsList>
+        {/* Username Configuration */}
+        <div className="space-y-4">
+          <h4 className="text-white font-semibold">Configure Usernames</h4>
 
-          <TabsContent value="quick-start" className="space-y-6">
-            <Card className="bg-gray-800 border-green-400/30">
-              <CardHeader>
-                <CardTitle className="text-green-400">Setup Progress</CardTitle>
-                <CardDescription>Complete these steps to get your portfolio running</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {setupSteps.map((step) => (
-                  <div
-                    key={step.id}
-                    className="flex items-center space-x-3 p-3 rounded-lg bg-gray-900/50 hover:bg-gray-900/70 transition-colors cursor-pointer"
-                    onClick={() => toggleStep(step.id)}
-                  >
-                    {completedSteps.includes(step.id) ? (
-                      <CheckCircle className="text-green-400 w-5 h-5" />
-                    ) : (
-                      <Circle className="text-gray-400 w-5 h-5" />
-                    )}
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-2">
-                        <h3 className="font-semibold">{step.title}</h3>
-                        {step.required && <Badge variant="destructive">Required</Badge>}
-                      </div>
-                      <p className="text-sm text-gray-400">{step.description}</p>
-                    </div>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
+          <div className="space-y-3">
+            <div>
+              <label className="block text-sm text-gray-300 mb-1">GitHub Username</label>
+              <input
+                type="text"
+                value={usernames.github}
+                onChange={(e) => setUsernames({ ...usernames, github: e.target.value })}
+                className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white text-sm focus:border-green-400 focus:outline-none"
+                placeholder="your-github-username"
+              />
+              <p className="text-xs text-gray-500 mt-1">Uses static data - no API calls needed</p>
+            </div>
 
-            <Alert className="border-green-400/30 bg-green-400/10">
-              <CheckCircle className="h-4 w-4 text-green-400" />
-              <AlertDescription className="text-green-100">
-                <strong>Good news!</strong> Your portfolio uses static GitHub data, so no API tokens are required. Just
-                configure your usernames and deploy!
-              </AlertDescription>
-            </Alert>
-          </TabsContent>
+            <div>
+              <label className="block text-sm text-gray-300 mb-1">LeetCode Username</label>
+              <input
+                type="text"
+                value={usernames.leetcode}
+                onChange={(e) => setUsernames({ ...usernames, leetcode: e.target.value })}
+                className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white text-sm focus:border-green-400 focus:outline-none"
+                placeholder="your-leetcode-username"
+              />
+              <p className="text-xs text-gray-500 mt-1">Tries multiple API endpoints for reliability</p>
+            </div>
 
-          <TabsContent value="configuration" className="space-y-6">
-            <Card className="bg-gray-800 border-green-400/30">
-              <CardHeader>
-                <CardTitle className="text-green-400">Platform Usernames</CardTitle>
-                <CardDescription>Configure your coding platform usernames for real-time statistics</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="github">GitHub Username</Label>
-                    <Input
-                      id="github"
-                      value={usernames.github}
-                      onChange={(e) => setUsernames({ ...usernames, github: e.target.value })}
-                      className="bg-gray-900 border-gray-600"
-                      placeholder="your-github-username"
-                    />
-                    <p className="text-xs text-gray-400">Used for repository and contribution stats</p>
-                  </div>
+            <div>
+              <label className="block text-sm text-gray-300 mb-1">Codeforces Handle</label>
+              <input
+                type="text"
+                value={usernames.codeforces}
+                onChange={(e) => setUsernames({ ...usernames, codeforces: e.target.value })}
+                className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white text-sm focus:border-green-400 focus:outline-none"
+                placeholder="your-codeforces-handle"
+              />
+              <p className="text-xs text-gray-500 mt-1">Uses official Codeforces API</p>
+            </div>
+          </div>
+        </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="leetcode">LeetCode Username</Label>
-                    <Input
-                      id="leetcode"
-                      value={usernames.leetcode}
-                      onChange={(e) => setUsernames({ ...usernames, leetcode: e.target.value })}
-                      className="bg-gray-900 border-gray-600"
-                      placeholder="your-leetcode-username"
-                    />
-                    <p className="text-xs text-gray-400">Used for problem-solving statistics</p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="codeforces">Codeforces Handle</Label>
-                    <Input
-                      id="codeforces"
-                      value={usernames.codeforces}
-                      onChange={(e) => setUsernames({ ...usernames, codeforces: e.target.value })}
-                      className="bg-gray-900 border-gray-600"
-                      placeholder="your-codeforces-handle"
-                    />
-                    <p className="text-xs text-gray-400">Used for competitive programming stats</p>
-                  </div>
-                </div>
-
-                <Button onClick={saveUsernames} className="bg-green-600 hover:bg-green-700">
-                  Save Configuration
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-gray-800 border-green-400/30">
-              <CardHeader>
-                <CardTitle className="text-green-400">Security Notice</CardTitle>
-                <CardDescription>Your portfolio is designed with security in mind</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Alert className="border-green-400/30 bg-green-400/10">
-                  <CheckCircle className="h-4 w-4 text-green-400" />
-                  <AlertDescription className="text-green-100">
-                    <strong>Secure Implementation:</strong> This portfolio uses static GitHub data and public APIs only.
-                    No sensitive tokens are exposed to the client, ensuring your credentials remain secure.
-                  </AlertDescription>
-                </Alert>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="deployment" className="space-y-6">
-            <Card className="bg-gray-800 border-green-400/30">
-              <CardHeader>
-                <CardTitle className="text-green-400">Deploy to Vercel</CardTitle>
-                <CardDescription>Deploy your portfolio to Vercel for free hosting</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-3">
-                  <div className="flex items-center space-x-2">
-                    <span className="text-green-400 font-mono">1.</span>
-                    <span>Push your code to GitHub</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <span className="text-green-400 font-mono">2.</span>
-                    <span>Connect your GitHub repository to Vercel</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <span className="text-green-400 font-mono">3.</span>
-                    <span>Deploy with default settings (no environment variables needed!)</span>
-                  </div>
-                </div>
-
-                <div className="flex space-x-2">
-                  <Button asChild className="bg-black hover:bg-gray-800">
-                    <a href="https://vercel.com/new" target="_blank" rel="noopener noreferrer">
-                      <ExternalLink className="w-4 h-4 mr-2" />
-                      Deploy to Vercel
-                    </a>
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-gray-800 border-green-400/30">
-              <CardHeader>
-                <CardTitle className="text-green-400">Custom Domain (Optional)</CardTitle>
-                <CardDescription>Add your own domain name to your portfolio</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <p className="text-gray-300">
-                  After deploying to Vercel, you can add a custom domain in your project settings.
+        {/* LeetCode API Information */}
+        <div className="space-y-3">
+          <h4 className="text-white font-semibold">LeetCode API Status</h4>
+          <div className="bg-yellow-900/20 border border-yellow-400/30 rounded p-3">
+            <div className="flex items-start space-x-2">
+              <AlertCircle className="text-yellow-400 mt-0.5" size={16} />
+              <div className="text-sm">
+                <p className="text-yellow-400 font-medium">API Reliability Notice</p>
+                <p className="text-gray-300 mt-1">
+                  LeetCode APIs can be unreliable. The portfolio tries multiple endpoints and shows fallback data if all
+                  fail.
                 </p>
-                <div className="bg-gray-900 p-3 rounded-lg font-mono text-sm">
-                  <div className="text-gray-400"># Example domains:</div>
-                  <div className="text-green-400">yourname.dev</div>
-                  <div className="text-green-400">portfolio.yourname.com</div>
-                  <div className="text-green-400">cyber.yourname.io</div>
+                <div className="mt-2 space-y-1 text-xs text-gray-400">
+                  <p>• Primary: leetcode-stats-api.herokuapp.com</p>
+                  <p>• Backup: alfa-leetcode-api.onrender.com</p>
+                  <p>• Fallback: faisalshohag API</p>
+                  <p>• Last resort: LeetCode GraphQL</p>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
+          </div>
+        </div>
 
-            <Card className="bg-gray-800 border-green-400/30">
-              <CardHeader>
-                <CardTitle className="text-green-400">Performance Tips</CardTitle>
-                <CardDescription>Optimize your portfolio for better performance</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-start space-x-2">
-                  <CheckCircle className="text-green-400 w-4 h-4 mt-0.5" />
-                  <span className="text-sm">Static GitHub data ensures fast loading times</span>
-                </div>
-                <div className="flex items-start space-x-2">
-                  <CheckCircle className="text-green-400 w-4 h-4 mt-0.5" />
-                  <span className="text-sm">Real-time LeetCode and Codeforces stats with fallbacks</span>
-                </div>
-                <div className="flex items-start space-x-2">
-                  <CheckCircle className="text-green-400 w-4 h-4 mt-0.5" />
-                  <span className="text-sm">Responsive design works on all devices</span>
-                </div>
-                <div className="flex items-start space-x-2">
-                  <CheckCircle className="text-green-400 w-4 h-4 mt-0.5" />
-                  <span className="text-sm">No sensitive data exposed to clients</span>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+        {/* Security Information */}
+        <div className="space-y-3">
+          <h4 className="text-white font-semibold">Security & Privacy</h4>
+          <div className="bg-green-900/20 border border-green-400/30 rounded p-3">
+            <div className="flex items-start space-x-2">
+              <CheckCircle className="text-green-400 mt-0.5" size={16} />
+              <div className="text-sm">
+                <p className="text-green-400 font-medium">Secure Implementation</p>
+                <p className="text-gray-300 mt-1">
+                  No sensitive tokens required. All API calls are made client-side to public endpoints only.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex space-x-3">
+          <button
+            onClick={saveUsernames}
+            className="flex-1 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors flex items-center justify-center space-x-2"
+          >
+            <RefreshCw size={16} />
+            <span>Save & Refresh</span>
+          </button>
+          <button
+            onClick={resetToDefaults}
+            className="px-4 py-2 border border-gray-600 hover:border-gray-500 text-gray-300 hover:text-white rounded text-sm transition-colors"
+          >
+            Reset
+          </button>
+        </div>
+
+        {/* Links */}
+        <div className="space-y-2 pt-4 border-t border-gray-700">
+          <h4 className="text-white font-semibold text-sm">Useful Links</h4>
+          <div className="space-y-1">
+            <a
+              href="https://github.com/SaadanNaqvi"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center space-x-2 text-blue-400 hover:text-blue-300 text-sm"
+            >
+              <ExternalLink size={14} />
+              <span>GitHub Profile</span>
+            </a>
+            <a
+              href="https://leetcode.com/Saadan_Naqvi"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center space-x-2 text-blue-400 hover:text-blue-300 text-sm"
+            >
+              <ExternalLink size={14} />
+              <span>LeetCode Profile</span>
+            </a>
+            <a
+              href="https://codeforces.com/profile/Saadan"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center space-x-2 text-blue-400 hover:text-blue-300 text-sm"
+            >
+              <ExternalLink size={14} />
+              <span>Codeforces Profile</span>
+            </a>
+          </div>
+        </div>
       </div>
     </div>
   )
