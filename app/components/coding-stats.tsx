@@ -186,7 +186,7 @@ const fetchCodeforcesStats = async () => {
 export default function CodingStats() {
   const [stats, setStats] = useState({
     leetcode: { solved: 0, total: 3000, easy: 0, medium: 0, hard: 0, ranking: 0 },
-    github: { repos: 45, commits: 1250, followers: 28, following: 42 }, // Static data for SaadanNaqvi
+    github: { repos: 9, commits: 37, followers: 1, following: 3 }, // Accurate data from your GitHub profile
     codeforces: { rating: 0, maxRating: 0, rank: "unrated", maxRank: "unrated", contests: 0 },
     projects: { completed: 0, active: 0 },
   })
@@ -215,10 +215,10 @@ export default function CodingStats() {
                   ranking: 50000,
                 },
           github: {
-            repos: 45,
-            commits: 1250,
-            followers: 28,
-            following: 42,
+            repos: 9,
+            commits: 37,
+            followers: 1,
+            following: 3,
           },
           codeforces:
             codeforcesResult.status === "fulfilled"
@@ -230,7 +230,7 @@ export default function CodingStats() {
                   maxRank: "candidate master",
                   contests: 23,
                 },
-          projects: { completed: 28, active: 5 },
+          projects: { completed: 6, active: 3 }, // Based on your visible repositories
         })
 
         // Log which APIs succeeded/failed
@@ -244,9 +244,9 @@ export default function CodingStats() {
         // Set all fallback data if everything fails
         setStats({
           leetcode: { solved: 847, total: 3000, easy: 200, medium: 400, hard: 247, ranking: 50000 },
-          github: { repos: 45, commits: 1250, followers: 28, following: 42 },
+          github: { repos: 9, commits: 37, followers: 1, following: 3 },
           codeforces: { rating: 1654, maxRating: 1800, rank: "expert", maxRank: "candidate master", contests: 23 },
-          projects: { completed: 28, active: 5 },
+          projects: { completed: 6, active: 3 },
         })
       } finally {
         setLoading(false)
@@ -361,7 +361,7 @@ export default function CodingStats() {
             value={stats.github.repos}
             icon={<GitBranch className="text-white" size={24} />}
             color="bg-blue-500/20"
-            subtitle={`${stats.github.followers} followers`}
+            subtitle={`${stats.github.followers} follower`}
             loading={false} // GitHub data is static, no loading needed
           />
 
@@ -375,7 +375,7 @@ export default function CodingStats() {
           />
 
           <StatCard
-            title="Total Commits"
+            title="Total Contributions"
             value={stats.github.commits}
             icon={<Zap className="text-white" size={24} />}
             color="bg-cyan-500/20"

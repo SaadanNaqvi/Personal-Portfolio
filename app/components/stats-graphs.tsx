@@ -279,34 +279,28 @@ async function fetchCodeforcesStats(username: string) {
   }
 }
 
-// Static GitHub data for SaadanNaqvi
+// Static GitHub data for SaadanNaqvi - Updated with accurate information
 function getStaticGitHubData() {
   return {
-    totalRepos: 45,
-    publicRepos: 45,
-    followers: 28,
-    following: 42,
+    totalRepos: 9,
+    publicRepos: 9,
+    followers: 1,
+    following: 3,
     languages: {
-      JavaScript: 35.2,
-      TypeScript: 28.7,
-      Python: 15.3,
-      Java: 8.9,
-      HTML: 6.4,
-      CSS: 3.8,
-      "C++": 1.7,
+      HTML: 45.8,
+      Python: 22.3,
+      CSS: 18.7,
+      JavaScript: 13.2,
     },
     repoHistory: [
-      { date: "Jan 22", count: 5 },
-      { date: "Mar 22", count: 12 },
-      { date: "Jun 22", count: 18 },
-      { date: "Sep 22", count: 25 },
-      { date: "Dec 22", count: 30 },
-      { date: "Mar 23", count: 35 },
-      { date: "Jun 23", count: 40 },
-      { date: "Sep 23", count: 43 },
-      { date: "Dec 23", count: 45 },
+      { date: "Jan 24", count: 2 },
+      { date: "Mar 24", count: 4 },
+      { date: "May 24", count: 6 },
+      { date: "Jul 24", count: 7 },
+      { date: "Sep 24", count: 8 },
+      { date: "Nov 24", count: 9 },
     ],
-    createdAt: "2022-01-15T00:00:00Z",
+    createdAt: "2024-01-01T00:00:00Z", // Estimated based on repository timeline
   }
 }
 
@@ -607,7 +601,9 @@ function GitHubReposChart({
 
           <div className="flex items-center justify-between">
             <span className="text-blue-400">Account Age</span>
-            <span className="text-white font-semibold">{accountAge} years</span>
+            <span className="text-white font-semibold">
+              {accountAge} year{accountAge !== 1 ? "s" : ""}
+            </span>
           </div>
 
           <div className="pt-2 border-t border-gray-700">
